@@ -156,13 +156,15 @@ impl Lexxon {
           let a = stack.pop_back().unwrap();
           let b = stack.back().unwrap().to_owned();
           stack.rotate_right(1); 
-          stack.push_back((b + a) & MAXINT);
+          let idx = b.overflowing_add(a).0;
+          stack.push_back(idx & MAXINT);
         },
         "g" => { // OP_SUB
           let a = stack.pop_back().unwrap();
           let b = stack.back().unwrap().to_owned();
+          let idx = b.overflowing_sub(a).0;
           stack.rotate_right(1); 
-          stack.push_back((b - a) & MAXINT);
+          stack.push_back(idx & MAXINT);
         },
         "h" => { // OP_MOD
           let a = stack.pop_back().unwrap();
