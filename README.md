@@ -1,6 +1,6 @@
 # `Lexxon`
 
-lexxon (เล็ก-สั้น) an tiny bytebeat interpreter, basically it's a cyclical stack machine (ring buffer) used at an output. implemented in Rust and inspired by [libglitch](https://github.com/erlehmann/libglitch). 
+lexxon (เล็ก-สั้น) a tiny bytebeat interpreter, basically it's a cyclical stack machine (ring buffer) used at an output. implemented in Rust and inspired by [libglitch](https://github.com/erlehmann/libglitch). 
 
 
 # Usage 
