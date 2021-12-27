@@ -1,12 +1,12 @@
 # `Lexxon`
 
-lexxon (เล็ก-สั้น) an tiny bytebeat interpreter,  implemented in Rust inspired by [libglitch](https://github.com/erlehmann/libglitch). 
+lexxon (เล็ก-สั้น) an tiny bytebeat interpreter, basically it's a cyclical stack machine (ring buffer) used at an output. implemented in Rust and inspired by [libglitch](https://github.com/erlehmann/libglitch). 
 
 
 # Usage 
 [osx] for pipe playing sound 
 ```
-cargo run -- `cat tracks/42_forever.lexx` | play -c 1 -b 8 -e unsigned -t raw -r 8k -
+cargo run -- `cat tracks/42_forever.lexx` | play -v 0.2 -c 1 -b 8 -e unsigned -t raw -r 8k -
 ```
 
 # OPs
