@@ -1,9 +1,13 @@
+#![allow(dead_code)]
+#![allow(unused_variables)]
+#![allow(unused_assignments)]
+
+#[macro_use] mod macros;
+
 use std::env;
-use std::io::{self, Write};
-use std::u8;
 use std::iter;
 use std::collections::VecDeque;
-#[macro_use] mod macros;
+use std::io::{self, Write};
 
 const OPCODES: &'static str = ".abcdefghijklmnopqrstuvwxyzGHIJKLMNOPQRSTUVWXYZ";
 const HEXDIGITS: &'static str = "0123456789ABCDEF";
@@ -24,8 +28,6 @@ struct Lexxon {
 // stack: [0; 256]
 
 impl Lexxon {
-  /// consists of lines signifying opcodes and hexadecimal numbers.
-  ///[a-z] and [G-Z] denote opcodes, while [1-9] and [A-F] denote numbers.
   fn new(melody: &str) -> Lexxon {
     Lexxon {
       lines: melody.split("!").map(|s| s.to_string()).collect(),
@@ -118,7 +120,7 @@ impl Lexxon {
     let stack = &mut self.stack;
     for (_,token) in self.tokens.iter().enumerate() {
 
-      // not an opcode, must be a number
+      // if not an opcode, must be a number
       if OPCODES.find(token).is_none() {
         let int_base_64 = i32::from_str_radix(token, 16).unwrap();
         stack.push_back(int_base_64);
@@ -277,7 +279,42 @@ impl Lexxon {
   }
 }
 
+// let keymap_conversion = {
+//   'a': 't',
+//   'b': 'put',
+//   'c': 'drop',
+
+//   'd': '*',
+//   'e': '/',
+//   'f': '+',
+//   'g': '-',
+//   'h': '%',
+
+//   'j': '<<',
+//   'k': '>>',
+//   'l': '&',
+//   'm': '|',
+//   'n': '^',
+//   'o': '~',
+
+//   'p': 'dup',
+//   'q': 'pick',
+//   'r': 'swap',
+
+//   's': '<',
+//   't': '>',
+//   'u': '=',
+//   '/': '//',
+
+//   '!': '\n',
+//   '.': ' ',
+// };
+
 fn main() {
+  // let test_codes = "42_forever t13880+t400%/ t5>>|t6>>^40- tC>>28 t12>>1&* 2+&t*| 43^";
+  //                42_forever a13880fa400he a5kma6kn40g aCk28 a12k1ld 2fladm 43n
+  // let c: Vec<char> = test_codes.chars().collect();
+  // println!("test codes parser: {:?}", c);
   let args: Vec<String> = env::args().collect();
   let codes = &args[1];
   let mut lex = Lexxon::new(codes);
