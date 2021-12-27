@@ -1,18 +1,19 @@
+use std::io::{self, Write};
 use std::u8;
 use std::iter;
-use std::ptr;
 use std::collections::VecDeque;
+#[macro_use] mod macros;
 
 const OPCODES: &'static str = ".abcdefghijklmnopqrstuvwxyzGHIJKLMNOPQRSTUVWXYZ";
 const HEXDIGITS: &'static str = "0123456789ABCDEF";
-const MAXINT: u32 = 0xFFFFFFFF;
+const MAXINT: i32 = i32::MAX;
 
 #[derive(Debug)]
 struct Lexxon {
   lines: Vec<String>,
   title: Option<String>,
   tokens: Vec<String>,
-  stack: VecDeque<u32>
+  stack: VecDeque<i32>
 }
 
 // example: w3_forever!a13880fa400he!a3kma2kn30g!aCk28!a12k1ld!2fladm!43n
@@ -65,8 +66,9 @@ impl Lexxon {
     return leadchar;
   }
 
-  fn reset(&mut self){
+  fn reset_stack(&mut self){
     self.stack.clear();
+    self.stack = vecdeque![0; 256];
   }
 
   fn tokenize(&self, lines: &[String], mutedlines: Option<String>) -> Vec<String> {
@@ -111,13 +113,13 @@ impl Lexxon {
     }
   }
 
-  fn compute(&mut self, t: u32, count: i32) -> u32 {
+  fn compute(&mut self, t: i32) -> i32 {
     let stack = &mut self.stack;
-    for (i,token) in self.tokens.iter().enumerate() {
+    for (_,token) in self.tokens.iter().enumerate() {
 
       // not an opcode, must be a number
       if OPCODES.find(token).is_none() {
-        let int_base_64 = u32::from_str_radix(token, 16).unwrap();
+        let int_base_64 = i32::from_str_radix(token, 16).unwrap();
         stack.push_back(int_base_64);
         stack.pop_front();
       } 
@@ -129,8 +131,8 @@ impl Lexxon {
         },
         "b" => { // OP_PUT
           let a = stack.back().unwrap() % 256;
-          let b4_lastitem_index = stack.len() - 2;
-          // stack[-a-1] = *stack.get(b4_lastitem_index).unwrap();
+          let pre_last_item = stack.len() - 2;
+          stack[(-a-1) as usize] = *stack.get(pre_last_item).unwrap();
           stack.rotate_right(1); 
         },
         "c" => { stack.rotate_right(1); }, // OP_DROP
@@ -145,7 +147,7 @@ impl Lexxon {
           let b = stack.back().unwrap().to_owned();
           stack.rotate_right(1);
           match b.checked_div(a){
-            Some(v) => { stack.push_back((b / a) & MAXINT)},
+            Some(_) => { stack.push_back((b / a) & MAXINT)},
             None => { stack.push_back(0)}
           } 
         },
@@ -210,8 +212,9 @@ impl Lexxon {
         },
         "o" => { // OP_NOT
           let last_item = stack.len() - 1;
-          let s = stack.get_mut(last_item).unwrap();
-          // s = !s & MAXINT;
+          let mut s = stack.get_mut(last_item).unwrap();
+          let neg = s.to_owned();
+          s = &mut (!neg & MAXINT);
         },
         "p" => { // OP_DUP
           let last_item = stack.len() - 1;
@@ -222,8 +225,10 @@ impl Lexxon {
           // 0 OP_PICK is equivalent to OP_DUP
           // 0xFF OP_PICK is equivalent to 0xFF
           let last_item = stack.len() - 1;
-          let a = stack.get_mut(last_item).unwrap();
-          // a = stack[-((a - 254) % 256)];
+          let mut a = stack.get_mut(last_item).unwrap();
+          let aa = a.to_owned();
+          let idx = (aa - 254) % 256;
+          a = &mut stack[(-idx) as usize];
         },
         "r" => { // OP_SWAP
           let last = stack.len() - 1;
@@ -264,15 +269,22 @@ impl Lexxon {
       }
     }
     let result = stack.get(stack.len() - 1).unwrap();
-    return result & 0xFF;
+    return *result;
+    // return stack;
   }
 }
 
 fn main() {
   let test_string = String::from("w3_forever!a13880fa400he!a3kma2kn30g!aCk28!a12k1ld!2fladm!43n");
   let mut lex = Lexxon::new(test_string);
+  lex.reset_stack();
   lex.get_title();
   lex.get_tokens(None);
-  // lex.expand();
-  println!("Hello, world! {:#?}", &lex);
+
+  let mut i = 0;
+  loop {
+    io::stdout().write(&[(lex.compute(i) as u8)]).unwrap();
+    i += 1;
+  }
+  // println!("Hello, world! {:?}", (lex.compute(i) as u8) as char);
 }
