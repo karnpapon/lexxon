@@ -1,3 +1,4 @@
+use std::env;
 use std::io::{self, Write};
 use std::u8;
 use std::iter;
@@ -19,13 +20,13 @@ struct Lexxon {
 // example: w3_forever!a13880fa400he!a3kma2kn30g!aCk28!a12k1ld!2fladm!43n
 // lines: ["w3_forever", "a13880fa400he", "a3kma2kn30g", "aCk28", "a12k1ld", "2fladm", "43n"]
 // title: "w3_forever"
-// tokens: ["a", "13880", "f","a","400","h","e"]
-// stack: []
+// tokens: ["a", "13880", "f","a","400","h","e", ...]
+// stack: [0; 256]
 
 impl Lexxon {
-  /// A Melody consists of lines signifying opcodes and hexadecimal numbers.
+  /// consists of lines signifying opcodes and hexadecimal numbers.
   ///[a-z] and [G-Z] denote opcodes, while [1-9] and [A-F] denote numbers.
-  fn new(melody: String) -> Lexxon {
+  fn new(melody: &str) -> Lexxon {
     Lexxon {
       lines: melody.split("!").map(|s| s.to_string()).collect(),
       title: None,
@@ -74,7 +75,7 @@ impl Lexxon {
   fn tokenize(&self, lines: &[String], mutedlines: Option<String>) -> Vec<String> {
     let mut tokens: Vec<String> = Vec::new();
     let mut state_number: bool = false;
-    for (i,line) in lines.iter().enumerate(){
+    for (_,line) in lines.iter().enumerate(){
       assert!(line.len() <= 16, "only 16 characters per line allowed");
 
       if mutedlines.is_some(){ continue }
@@ -168,7 +169,7 @@ impl Lexxon {
           let b = stack.back().unwrap().to_owned();
           stack.rotate_right(1);
           match b.checked_div(a){
-            Some(v) => { stack.push_back((b % a) & MAXINT)},
+            Some(_) => { stack.push_back((b % a) & MAXINT)},
             None => { stack.push_back(0)}
           } 
         },
@@ -227,8 +228,9 @@ impl Lexxon {
           let last_item = stack.len() - 1;
           let mut a = stack.get_mut(last_item).unwrap();
           let aa = a.to_owned();
-          let idx = (aa - 254) % 256;
-          a = &mut stack[(-idx) as usize];
+          let idx = (aa.wrapping_sub(254)) % 256;
+          let neg_idx = wrapped_neg_idx(-idx, 256) as usize;
+          a = &mut stack[neg_idx];
         },
         "r" => { // OP_SWAP
           let last = stack.len() - 1;
@@ -268,23 +270,25 @@ impl Lexxon {
         _ => {}
       }
     }
-    let result = stack.get(stack.len() - 1).unwrap();
+    let result = stack.back().unwrap();
     return *result;
-    // return stack;
   }
 }
 
 fn main() {
-  let test_string = String::from("w3_forever!a13880fa400he!a3kma2kn30g!aCk28!a12k1ld!2fladm!43n");
-  let mut lex = Lexxon::new(test_string);
+  let args: Vec<String> = env::args().collect();
+  let codes = &args[1];
+  let mut lex = Lexxon::new(codes);
   lex.reset_stack();
   lex.get_title();
   lex.get_tokens(None);
-
   let mut i = 0;
   loop {
     io::stdout().write(&[(lex.compute(i) as u8)]).unwrap();
     i += 1;
   }
-  // println!("Hello, world! {:?}", (lex.compute(i) as u8) as char);
+}
+
+fn wrapped_neg_idx(a: i32, n: i32) -> i32 {
+  return ((a % n) + n) % n;
 }
